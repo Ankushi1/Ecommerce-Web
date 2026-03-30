@@ -1,0 +1,153 @@
+const express = require("express");
+const mongoose = require("mongoose");
+const cors = require("cors");
+const Product = require("./models/Product"); // Product model
+const User = require("./models/User");       // User model
+const bcrypt = require("bcryptjs");
+const jwt = require("jsonwebtoken");
+// 🔐 AUTH MIDDLEWARE
+const authMiddleware = (req, res, next) => {
+
+  const token = req.headers["authorization"];
+
+  if (!token) {
+    return res.status(401).json({ message: "No token, access denied" });
+  }
+
+  try {
+    const verified = jwt.verify(token, "mySecretKey");
+    req.user = verified;
+    next();
+  } catch (err) {
+    res.status(400).json({ message: "Invalid token" });
+  }
+};
+
+const app = express();   // app init
+app.use(cors());
+app.use(express.json());
+
+//mongoose connect
+mongoose.connect("mongodb://localhost:27017/ecommerce")
+.then(() => console.log("MongoDB Local connected"))
+.catch(err => console.log(err));
+
+
+// ------------------- TEST ROUTE -------------------
+app.get("/products/:id", async (req, res) => {
+  try {
+    const product = await Product.findById(req.params.id);
+
+    console.log("Fetched product:", product); // 🔴 DEBUG
+
+    if (!product) {
+      return res.status(404).json(null); // ✅ send null instead
+    }
+
+    res.json(product);
+
+  } catch (err) {
+    console.log(err);
+    res.status(500).json({ error: "Invalid ID format" });
+  }
+});
+// ------------------- SIGNUP -------------------
+app.post("/api/signup", async (req, res) => {
+  try {
+    const { name, email, password } = req.body;
+    if (!name || !email || !password)
+      return res.status(400).json({ message: "All fields required" });
+
+    const oldUser = await User.findOne({ email });
+    if (oldUser) return res.status(400).json({ message: "User already exists" });
+
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    const user = await User.create({
+  name,
+  email,
+  password: hashedPassword,
+  isAdmin: false
+});
+
+
+    res.status(201).json({
+      message: "Signup successful",
+      user: { id: user._id, name: user.name, email: user.email }
+    });
+
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ------------------- LOGIN -------------------
+app.post("/api/login", async (req, res) => {
+  try {
+    const { email, password } = req.body;
+    const user = await User.findOne({ email });
+    if (!user) return res.status(400).json({ message: "User not found" });
+
+    const isMatch = await bcrypt.compare(password, user.password);
+    if (!isMatch) return res.status(400).json({ message: "Wrong password" });
+
+    const token = jwt.sign(
+  { id: user._id, isAdmin: user.isAdmin },
+  "mySecretKey",
+  { expiresIn: "1d" }
+);
+
+
+    res.json({
+      message: "Login successful",
+      token,
+      user: { id: user._id, name: user.name, email: user.email }
+    });
+
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ------------------- PRODUCTS CRUD -------------------
+
+// CREATE product (protected)
+app.post("/products", authMiddleware, async (req, res) => {
+  try {
+    const newProduct = new Product(req.body);
+    const saved = await newProduct.save();
+    res.json(saved);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// READ all products
+app.get("/products", async (req, res) => {
+  const products = await Product.find();
+  res.json(products);
+});
+
+// READ product by id
+app.get("/products/:id", async (req, res) => {
+  const product = await Product.findById(req.params.id);
+  if (!product) return res.json({ message: "Product not found" });
+  res.json(product);
+});
+
+// UPDATE product (protected)
+app.put("/products/:id", authMiddleware, async (req, res) => {
+  const updated = await Product.findByIdAndUpdate(req.params.id, req.body, { new: true });
+  res.json(updated);
+});
+
+// DELETE product (protected)
+app.delete("/products/:id", authMiddleware, async (req, res) => {
+  await Product.findByIdAndDelete(req.params.id);
+  res.json({ message: "Product deleted" });
+});
+
+// ------------------- START SERVER -------------------
+app.listen(5000, () => {
+  console.log("Server running on http://localhost:5000");
+});
