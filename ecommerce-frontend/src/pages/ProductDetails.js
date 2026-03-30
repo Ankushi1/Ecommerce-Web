@@ -9,16 +9,19 @@ function ProductDetails({ cart, setCart }) {
   const [products, setProducts] = useState([]);
   const [msg, setMsg] = useState("");
 
+  // 🔹 Use Render backend URL
+  const BASE_URL = "https://ecommerce-web-qkbn.onrender.com";
+
   // ✅ GET SINGLE PRODUCT
   useEffect(() => {
-    axios.get(`http://localhost:5000/products/${id}`)
+    axios.get(`${BASE_URL}/products/${id}`)
       .then(res => setProduct(res.data))
       .catch(err => console.log(err));
   }, [id]);
 
   // ✅ GET ALL PRODUCTS
   useEffect(() => {
-    axios.get("http://localhost:5000/products")
+    axios.get(`${BASE_URL}/products`)
       .then(res => setProducts(res.data))
       .catch(err => console.log(err));
   }, []);

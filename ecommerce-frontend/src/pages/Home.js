@@ -16,7 +16,7 @@ function Home({ cart, setCart }) {
 
   // ✅ FETCH PRODUCTS
   useEffect(() => {
-    axios.get("http://localhost:5000/products")
+    axios.get("https://ecommerce-web-qkbn.onrender.com/api/...")
       .then(res => setProducts(res.data))
       .catch(err => console.log(err));
   }, []);
