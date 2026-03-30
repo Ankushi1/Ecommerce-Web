@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState} from "react";
 import Fuse from "fuse.js";
 import "./Chatbot.css";
 
