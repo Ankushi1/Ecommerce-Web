@@ -1,8 +1,10 @@
 import React, { useEffect, useState } from "react";
+import axios from "axios";
 import "./Orders.css";
 
 function Orders() {
   const [orders, setOrders] = useState([]);
+  const BASE_URL = "https://ecommerce-web-qkbn.onrender.com";
 
   // =========================
   // AI DELIVERY DAYS FUNCTION
@@ -26,52 +28,65 @@ function Orders() {
     return days;
   };
 
+  // =========================
+  // FETCH ORDERS FROM BACKEND
+  // =========================
   useEffect(() => {
-    const saved = JSON.parse(localStorage.getItem("orders")) || [];
+    const token = localStorage.getItem("token");
+    if (!token) return;
 
-    const updatedOrders = saved.map(order => {
+    axios
+      .get(`${BASE_URL}/api/orders`, {
+        headers: { Authorization: `Bearer ${token}` },
+      })
+      .then((res) => {
+        const updatedOrders = res.data.map((order) => {
+          const orderDate = order.date ? new Date(order.date) : new Date();
+          const today = new Date();
 
-      // ✅ SAFE DATE (fix invalid date issue)
-      const orderDate = order.date ? new Date(order.date) : new Date();
-      const today = new Date();
+          const diffDays = Math.floor(
+            (today - orderDate) / (1000 * 60 * 60 * 24)
+          );
 
-      const diffDays = Math.floor(
-        (today - orderDate) / (1000 * 60 * 60 * 24)
-      );
+          // STATUS TRACKING
+          let status = "Order Placed";
+          if (diffDays >= 1) status = "Packed";
+          if (diffDays >= 2) status = "Shipped";
+          if (diffDays >= 3) status = "Delivered";
 
-      // =========================
-      // STATUS TRACKING
-      // =========================
-      let status = "Order Placed";
-      if (diffDays >= 1) status = "Packed";
-      if (diffDays >= 2) status = "Shipped";
-      if (diffDays >= 3) status = "Delivered";
+          // AI DELIVERY DAYS
+          const totalDays = order.totalDays || getAIDeliveryDays(order);
+          const remainingDays = Math.max(totalDays - diffDays, 0);
 
-      // =========================
-      // AI DELIVERY DAYS (STABLE)
-      // =========================
-      const totalDays = order.totalDays || getAIDeliveryDays(order);
-      const remainingDays = Math.max(totalDays - diffDays, 0);
+          return {
+            ...order,
+            status,
+            totalDays,
+            remainingDays,
+            date: order.date || new Date().toISOString(),
+          };
+        });
 
-      return {
-        ...order,
-        status,
-        totalDays,
-        remainingDays,
-        date: order.date || new Date().toISOString() // fix old orders
-      };
-    });
-
-    setOrders(updatedOrders);
-    localStorage.setItem("orders", JSON.stringify(updatedOrders));
-
+        setOrders(updatedOrders);
+      })
+      .catch((err) => console.log(err));
   }, []);
 
-  const deleteOrder = (index) => {
-    const updated = [...orders];
-    updated.splice(index, 1);
-    setOrders(updated);
-    localStorage.setItem("orders", JSON.stringify(updated));
+  // =========================
+  // DELETE ORDER
+  // =========================
+  const deleteOrder = (orderId) => {
+    const token = localStorage.getItem("token");
+    if (!token) return;
+
+    axios
+      .delete(`${BASE_URL}/api/orders/${orderId}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      })
+      .then(() => {
+        setOrders(orders.filter((o) => o._id !== orderId));
+      })
+      .catch((err) => console.log(err));
   };
 
   return (
@@ -82,66 +97,54 @@ function Orders() {
         <p>No Orders Yet</p>
       ) : (
         <div className="orders-grid">
-
-          {orders.map((order, index) => (
-            <div key={index} className="order-card">
+          {orders.map((order) => (
+            <div key={order._id} className="order-card">
 
               {/* IMAGE FIX */}
               <img
                 src={
                   order.image?.startsWith("http")
                     ? order.image
-                    : `http://localhost:5000${order.image}`
+                    : `${BASE_URL}${order.image}`
                 }
                 alt={order.title}
               />
 
               <h4>{order.title}</h4>
               <p>₹{order.price}</p>
-
-              <p><b>ID:</b> {order.id}</p>
-
-              {/* ✅ FIXED DATE DISPLAY */}
-              <p>
-                <b>Date:</b>{" "}
-                {order.date
-                  ? new Date(order.date).toLocaleString()
-                  : "Just Now"}
-              </p>
-
+              <p><b>ID:</b> {order._id}</p>
+              <p><b>Date:</b> {order.date ? new Date(order.date).toLocaleString() : "Just Now"}</p>
               <p><b>Payment:</b> {order.payment}</p>
 
-              {/* ✅ AI DELIVERY IN DAYS */}
+              {/* AI DELIVERY */}
               <p>
                 <b>Delivery:</b>{" "}
                 {order.remainingDays > 0
                   ? `Arriving in ${order.remainingDays} day(s)`
-                  : "Delivered"} <br />
-              
+                  : "Delivered"}
               </p>
 
               {/* STATUS */}
-              <p className={`status ${order.status}`}>
+              <p className={`status ${order.status.replace(" ", "-")}`}>
                 {order.status}
               </p>
 
               <button
-  onClick={() => deleteOrder(index)}
-  style={{
-    marginTop: "10px",
-    padding: "6px 12px",
-    backgroundColor: "#e74c3c", // red
-    color: "white",
-    border: "none",
-    borderRadius: "6px",
-    cursor: "pointer"
-  }}
->
-  Delete
-</button>
+                onClick={() => deleteOrder(order._id)}
+                style={{
+                  marginTop: "10px",
+                  padding: "6px 12px",
+                  backgroundColor: "#e74c3c",
+                  color: "white",
+                  border: "none",
+                  borderRadius: "6px",
+                  cursor: "pointer",
+                }}
+              >
+                Delete
+              </button>
             </div>
           ))}
-
         </div>
       )}
     </div>
