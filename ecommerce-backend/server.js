@@ -79,9 +79,10 @@ app.post("/api/login", async (req, res) => {
 });
 
 // ---------------- PRODUCTS CRUD ----------------
+// ---------------- PRODUCTS CRUD ----------------
 
 // CREATE product (protected)
-app.post("/products", authMiddleware, async (req, res) => {
+app.post("/api/products", authMiddleware, async (req, res) => {
   try {
     const newProduct = new Product(req.body);
     const saved = await newProduct.save();
@@ -92,13 +93,17 @@ app.post("/products", authMiddleware, async (req, res) => {
 });
 
 // READ all products
-app.get("/products", async (req, res) => {
-  const products = await Product.find();
-  res.json(products);
+app.get("/api/products", async (req, res) => {
+  try {
+    const products = await Product.find();
+    res.json(products);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
 // READ product by ID
-app.get("/products/:id", async (req, res) => {
+app.get("/api/products/:id", async (req, res) => {
   try {
     const product = await Product.findById(req.params.id);
     if (!product) return res.status(404).json({ message: "Product not found" });
@@ -109,17 +114,24 @@ app.get("/products/:id", async (req, res) => {
 });
 
 // UPDATE product (protected)
-app.put("/products/:id", authMiddleware, async (req, res) => {
-  const updated = await Product.findByIdAndUpdate(req.params.id, req.body, { new: true });
-  res.json(updated);
+app.put("/api/products/:id", authMiddleware, async (req, res) => {
+  try {
+    const updated = await Product.findByIdAndUpdate(req.params.id, req.body, { new: true });
+    res.json(updated);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
 // DELETE product (protected)
-app.delete("/products/:id", authMiddleware, async (req, res) => {
-  await Product.findByIdAndDelete(req.params.id);
-  res.json({ message: "Product deleted" });
+app.delete("/api/products/:id", authMiddleware, async (req, res) => {
+  try {
+    await Product.findByIdAndDelete(req.params.id);
+    res.json({ message: "Product deleted" });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 });
-
 // ---------------- START SERVER ----------------
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
