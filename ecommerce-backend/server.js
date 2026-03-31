@@ -4,6 +4,7 @@ const mongoose = require("mongoose");
 const cors = require("cors");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
+const Order = require("./models/Order");
 require("dotenv").config();
 
 // Models
@@ -79,7 +80,6 @@ app.post("/api/login", async (req, res) => {
 });
 
 // ---------------- PRODUCTS CRUD ----------------
-// ---------------- PRODUCTS CRUD ----------------
 
 // CREATE product (protected)
 app.post("/api/products", authMiddleware, async (req, res) => {
@@ -135,3 +135,45 @@ app.delete("/api/products/:id", authMiddleware, async (req, res) => {
 // ---------------- START SERVER ----------------
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+
+
+
+// ================= ORDER ROUTES =================
+
+// CREATE ORDER
+app.post("/api/orders", authMiddleware, async (req, res) => {
+  try {
+    const orders = req.body;
+
+    const savedOrders = await Order.insertMany(
+      orders.map(order => ({
+        ...order,
+        userId: req.user.id
+      }))
+    );
+
+    res.json(savedOrders);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// GET USER ORDERS
+app.get("/api/orders", authMiddleware, async (req, res) => {
+  try {
+    const orders = await Order.find({ userId: req.user.id });
+    res.json(orders);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// DELETE ORDER
+app.delete("/api/orders/:id", authMiddleware, async (req, res) => {
+  try {
+    await Order.findByIdAndDelete(req.params.id);
+    res.json({ message: "Order deleted" });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
