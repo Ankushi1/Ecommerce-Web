@@ -32,7 +32,7 @@ function Orders() {
       try {
         const res = await API.get("/api/orders");
 
-        const updatedOrders = res.data.map(order => {
+        const updatedOrders = res.data.map((order) => {
           const orderDate = new Date(order.date);
           const today = new Date();
 
@@ -51,12 +51,11 @@ function Orders() {
           return {
             ...order,
             status,
-            remainingDays
+            remainingDays,
           };
         });
 
         setOrders(updatedOrders);
-
       } catch (err) {
         console.log(err);
       }
@@ -71,7 +70,7 @@ function Orders() {
   const deleteOrder = async (id) => {
     try {
       await API.delete(`/api/orders/${id}`);
-      setOrders(orders.filter(o => o._id !== id));
+      setOrders(orders.filter((o) => o._id !== id));
     } catch (err) {
       console.log(err);
     }
@@ -85,10 +84,8 @@ function Orders() {
         <p>No Orders Yet</p>
       ) : (
         <div className="orders-grid">
-
-          {orders.map(order => (
+          {orders.map((order) => (
             <div key={order._id} className="order-card">
-
               <img
                 src={order.image || "https://via.placeholder.com/200"}
                 alt={order.title}
@@ -97,14 +94,17 @@ function Orders() {
               <h4>{order.title}</h4>
               <p>₹{order.price}</p>
 
-              <p><b>ID:</b> {order._id}</p>
-
               <p>
-                <b>Date:</b>{" "}
-                {new Date(order.date).toLocaleString()}
+                <b>ID:</b> {order._id}
               </p>
 
-              <p><b>Payment:</b> {order.payment}</p>
+              <p>
+                <b>Date:</b> {new Date(order.date).toLocaleString()}
+              </p>
+
+              <p>
+                <b>Payment:</b> {order.payment}
+              </p>
 
               <p>
                 <b>Delivery:</b>{" "}
@@ -113,17 +113,20 @@ function Orders() {
                   : "Delivered"}
               </p>
 
-              <p className={`status ${order.status}`}>
+              {/* ✅ Status color fix */}
+              <p className={`status ${order.status.replace(" ", "-")}`}>
                 {order.status}
               </p>
 
-              <button onClick={() => deleteOrder(order._id)}>
+              {/* ✅ Delete button fix */}
+              <button
+                className="delete-btn"
+                onClick={() => deleteOrder(order._id)}
+              >
                 Delete
               </button>
-
             </div>
           ))}
-
         </div>
       )}
     </div>
