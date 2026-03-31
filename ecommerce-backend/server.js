@@ -31,9 +31,7 @@ app.use(cors());
 app.use(express.json());
 
 // ---------------- MONGODB ATLAS CONNECTION ----------------
-// ---------- MONGODB ATLAS CONNECTION ----------
-const MONGO_URI = "mongodb+srv://ankushi7:ankushi46@cluster0.one8vue.mongodb.net/?appName=Cluster0";
-
+const MONGO_URI = "mongodb+srv://ankushivishwakarma01_db_user:ankushi7@cluster0.bdkdrlw.mongodb.net/ecommerce?retryWrites=true&w=majority";
 mongoose.connect(MONGO_URI)
   .then(() => console.log("✅ MongoDB Atlas connected"))
   .catch(err => console.log("❌ MongoDB Error:", err));
