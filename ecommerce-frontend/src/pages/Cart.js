@@ -23,34 +23,35 @@ function Cart({ cart = [], setCart }) {
 
   // ✅ PLACE ORDER (NOW BACKEND)
   const placeOrder = async () => {
-    if (cart.length === 0) {
-      alert("Cart is empty!");
-      return;
-    }
+  if (cart.length === 0) {
+    alert("Cart is empty!");
+    return;
+  }
 
-    try {
-      const ordersData = cart.map(item => ({
-        title: item.title,
-        price: item.price,
-        image: item.image,
-        category: item.category,
-        payment: paymentMethod
-      }));
+  try {
+    const ordersData = cart.map(item => ({
+      title: item.title,
+      price: item.price,
+      image: item.image,
+      category: item.category,
+      date: new Date().toISOString(),
+      payment: paymentMethod,
+      status: "Order Placed"
+    }));
 
-      // 🔥 SEND TO BACKEND
-      await API.post("/api/orders", ordersData);
+    // ✅ SEND TO BACKEND
+    await API.post("/api/orders", ordersData);
 
-      alert("Order Placed Successfully ✅");
+    alert("Order Placed Successfully ✅");
 
-      setCart([]);
-      navigate("/orders");
+    setCart([]);
+    navigate("/orders");
 
-    } catch (err) {
-      console.log("Order Error:", err);
-      alert("Order failed ❌");
-    }
-  };
-
+  } catch (err) {
+    console.log(err);
+    alert("Order failed ❌");
+  }
+};
   return (
     <div className="cart-page">
       <h2>My Cart</h2>
