@@ -13,16 +13,25 @@ const User = require("./models/User");
 
 // ---------------- AUTH MIDDLEWARE ----------------
 const authMiddleware = (req, res, next) => {
-  const token = req.headers["authorization"]; // your existing line is correct
+  const authHeader = req.headers["authorization"];
 
-  if (!token) return res.status(401).json({ message: "No token, access denied" });
+  if (!authHeader) {
+    return res.status(401).json({ message: "No token, access denied" });
+  }
+
+  // ✅ Extract token from "Bearer TOKEN"
+  const token = authHeader.split(" ")[1];
+
+  if (!token) {
+    return res.status(401).json({ message: "Token missing" });
+  }
 
   try {
     const verified = jwt.verify(token, process.env.JWT_SECRET || "mySecretKey");
     req.user = verified;
     next();
   } catch (err) {
-    res.status(400).json({ message: "Invalid token" });
+    return res.status(400).json({ message: "Invalid token" });
   }
 };
 
@@ -132,9 +141,6 @@ app.delete("/api/products/:id", authMiddleware, async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 });
-// ---------------- START SERVER ----------------
-const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
 
 
 
@@ -177,3 +183,7 @@ app.delete("/api/orders/:id", authMiddleware, async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 });
+
+// ---------------- START SERVER ----------------
+const PORT = process.env.PORT || 5000;
+app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
