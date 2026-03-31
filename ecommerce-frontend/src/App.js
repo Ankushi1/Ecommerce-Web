@@ -1,4 +1,3 @@
-// src/App.js
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { useState, useEffect } from "react";
 import Home from "./pages/Home";
@@ -14,25 +13,16 @@ function App() {
   const [cart, setCart] = useState([]);
   const [isLogin, setIsLogin] = useState(false);
 
-  // ✅ Load token and cart from localStorage
- useEffect(() => {
-  const checkLogin = () => {
+  // ✅ Load token + cart
+  useEffect(() => {
     const token = localStorage.getItem("token");
     setIsLogin(!!token);
-  };
-
-  checkLogin();
-
-  window.addEventListener("storage", checkLogin);
-
-  return () => window.removeEventListener("storage", checkLogin);
-}, []);
 
     const savedCart = JSON.parse(localStorage.getItem("cart")) || [];
     setCart(savedCart);
   }, []);
 
-  // ✅ Persist cart in localStorage
+  // ✅ Save cart
   useEffect(() => {
     localStorage.setItem("cart", JSON.stringify(cart));
   }, [cart]);
@@ -58,7 +48,6 @@ function App() {
           }
         />
 
-        {/* ✅ Make Orders protected */}
         <Route
           path="/orders"
           element={
