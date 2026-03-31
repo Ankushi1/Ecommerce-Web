@@ -22,16 +22,25 @@ function Login({ setIsLogin }) {
 
       // ✅ Save token
       localStorage.setItem("token", res.data.token);
+
+      // ✅ optional: save user
+      localStorage.setItem("user", JSON.stringify(res.data.user));
+
       setIsLogin(true);
       setMsg("Login successful ✅");
 
-      // ✅ Auto redirect after login
+      // ✅ redirect
       setTimeout(() => {
-        navigate("/"); // home page
-      }, 1000);
+        navigate("/");
+      }, 800);
 
     } catch (err) {
-      setMsg(err.response?.data?.message || "Login failed ❌");
+      console.log("Login Error:", err); // ✅ DEBUG
+
+      setMsg(
+        err.response?.data?.message ||
+        "Server error. Please try again ❌"
+      );
     }
   };
 

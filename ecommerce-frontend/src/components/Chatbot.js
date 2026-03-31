@@ -1,4 +1,4 @@
-import { useState} from "react";
+import { useState } from "react";
 import Fuse from "fuse.js";
 import "./Chatbot.css";
 
@@ -10,23 +10,20 @@ function Chatbot({ products, onAddToCart }) {
   const [input, setInput] = useState("");
   const [lastSearch, setLastSearch] = useState("");
 
-  // ✅ Fuse (AI + spelling)
+  // ✅ AI Search (with spelling support)
   const fuse = new Fuse(products, {
     keys: ["title", "category"],
     threshold: 0.4,
   });
-
- 
 
   const handleSend = () => {
     if (!input.trim()) return;
 
     const userMessage = { text: input, sender: "user" };
     let botReply;
-
     const text = input.toLowerCase();
 
-    // 🔥 ORDER TRACKING (FAKE DEMO)
+    // 📦 ORDER TRACKING (demo)
     if (text.includes("order") || text.includes("track")) {
       botReply = {
         text: "📦 Your order is out for delivery and will reach you by tomorrow!",
@@ -34,7 +31,7 @@ function Chatbot({ products, onAddToCart }) {
       };
     }
 
-    // 🔥 REPEAT LAST SEARCH (MEMORY)
+    // 🔁 Repeat last search
     else if (text.includes("again") && lastSearch) {
       const results = fuse.search(lastSearch);
       const matched = results.map(r => r.item);
@@ -46,17 +43,18 @@ function Chatbot({ products, onAddToCart }) {
       };
     }
 
-    // 🔥 NORMAL AI SEARCH + SPELLING
+    // 🔍 Normal search
     else {
       const results = fuse.search(input);
       let matchedProducts = results.map(r => r.item);
 
+      // 💰 cheap filter
       if (text.includes("cheap")) {
         matchedProducts = products.filter(p => p.price < 500);
       }
 
       if (matchedProducts.length > 0) {
-        setLastSearch(input); // memory save
+        setLastSearch(input);
 
         botReply = {
           text: `I found ${matchedProducts.length} products for you 😊`,
@@ -77,14 +75,14 @@ function Chatbot({ products, onAddToCart }) {
 
   return (
     <>
-      {/* 💬 ICON */}
+      {/* 💬 Chat Icon */}
       {!isOpen && (
         <div className="chat-icon" onClick={() => setIsOpen(true)}>
           💬
         </div>
       )}
 
-      {/* 💬 CHAT UI */}
+      {/* 💬 Chat UI */}
       {isOpen && (
         <div className="chatbot">
 
@@ -102,12 +100,30 @@ function Chatbot({ products, onAddToCart }) {
                   <div className="chat-products">
                     {msg.products.map(p => (
                       <div key={p._id} className="chat-card">
-                        <img src={p.image} alt={p.title} />
+                        <img
+                          src={p.image}
+                          alt={p.title}
+                          onError={(e) => {
+                            e.target.src = "https://via.placeholder.com/150";
+                          }}
+                        />
                         <p>{p.title}</p>
                         <p>₹{p.price}</p>
-                        <button onClick={() => onAddToCart(p)}>
+
+                        <button
+                          onClick={() => {
+                            const token = localStorage.getItem("token");
+                            if (!token) {
+                              alert("Please login first");
+                              window.location.href = "/login";
+                              return;
+                            }
+                            onAddToCart(p);
+                          }}
+                        >
                           Add
                         </button>
+
                       </div>
                     ))}
                   </div>
@@ -116,7 +132,7 @@ function Chatbot({ products, onAddToCart }) {
             ))}
           </div>
 
-          {/* INPUT*/}
+          {/* INPUT */}
           <div className="chat-input">
             <input
               type="text"
@@ -125,7 +141,6 @@ function Chatbot({ products, onAddToCart }) {
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && handleSend()}
             />
-
             <button onClick={handleSend}>Send</button>
           </div>
 

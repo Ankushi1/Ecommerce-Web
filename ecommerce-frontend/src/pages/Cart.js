@@ -1,48 +1,54 @@
-// src/pages/Cart.js
 import React from "react";
 import { Link, useNavigate } from "react-router-dom";
 import "./Cart.css";
+import API from "../api";
 
 function Cart({ cart = [], setCart }) {
   const navigate = useNavigate();
 
-  // Remove item
+  const [paymentMethod, setPaymentMethod] = React.useState("COD");
+
+  // ✅ Remove item
   const removeFromCart = (index) => {
     const newCart = [...cart];
     newCart.splice(index, 1);
     setCart(newCart);
   };
-const [paymentMethod, setPaymentMethod] = React.useState("COD");
-  // Total price
+
+  // ✅ Total price
   const totalPrice = cart.reduce(
     (total, item) => total + (item.price || 0),
     0
   );
 
-  // ✅ SIMPLE PLACE ORDER (NO ADDRESS)
-  const placeOrder = () => {
-
+  // ✅ PLACE ORDER (NOW BACKEND)
+  const placeOrder = async () => {
     if (cart.length === 0) {
       alert("Cart is empty!");
       return;
     }
 
-    const newOrders = cart.map(item => ({
-      ...item,
-      id: "ORD" + Math.floor(Math.random() * 100000),
-      date: new Date().toISOString(),
-      payment: "COD",
-      status: "Order Placed"
-    }));
+    try {
+      const ordersData = cart.map(item => ({
+        title: item.title,
+        price: item.price,
+        image: item.image,
+        category: item.category,
+        payment: paymentMethod
+      }));
 
-    const existing = JSON.parse(localStorage.getItem("orders")) || [];
+      // 🔥 SEND TO BACKEND
+      await API.post("/api/orders", ordersData);
 
-    localStorage.setItem("orders", JSON.stringify([...existing, ...newOrders]));
+      alert("Order Placed Successfully ✅");
 
-    alert("Order Placed Successfully ✅");
+      setCart([]);
+      navigate("/orders");
 
-    setCart([]);
-    navigate("/orders");
+    } catch (err) {
+      console.log("Order Error:", err);
+      alert("Order failed ❌");
+    }
   };
 
   return (
@@ -63,7 +69,15 @@ const [paymentMethod, setPaymentMethod] = React.useState("COD");
           <div className="cart-items">
             {cart.map((item, index) => (
               <div key={index} className="cart-card">
-                <img src={item.image} alt={item.title} />
+
+                {/* ✅ SAFE IMAGE */}
+                <img
+                  src={item.image}
+                  alt={item.title}
+                  onError={(e) => {
+                    e.target.src = "https://via.placeholder.com/150";
+                  }}
+                />
 
                 <div className="cart-info">
                   <h4>{item.title}</h4>
@@ -80,31 +94,30 @@ const [paymentMethod, setPaymentMethod] = React.useState("COD");
             ))}
           </div>
 
-          {/* PAYMENT SECTION */}
+          {/* PAYMENT */}
           <div className="payment-section">
-  <h3>Select Payment Method</h3>
+            <h3>Select Payment Method</h3>
 
-  <label className="payment-option">
-    <input
-      type="radio"
-      value="COD"
-      checked={paymentMethod === "COD"}
-      onChange={(e) => setPaymentMethod(e.target.value)}
-    />
-    Cash on Delivery
-  </label>
+            <label className="payment-option">
+              <input
+                type="radio"
+                value="COD"
+                checked={paymentMethod === "COD"}
+                onChange={(e) => setPaymentMethod(e.target.value)}
+              />
+              Cash on Delivery
+            </label>
 
-  <label className="payment-option">
-    <input
-      type="radio"
-      value="ONLINE"
-      checked={paymentMethod === "ONLINE"}
-      onChange={(e) => setPaymentMethod(e.target.value)}
-    />
-    Pay Online (UPI / Card)
-  </label>
-</div>
-
+            <label className="payment-option">
+              <input
+                type="radio"
+                value="ONLINE"
+                checked={paymentMethod === "ONLINE"}
+                onChange={(e) => setPaymentMethod(e.target.value)}
+              />
+              Pay Online (UPI / Card)
+            </label>
+          </div>
 
           {/* SUMMARY */}
           <div className="cart-summary">

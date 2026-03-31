@@ -13,17 +13,17 @@ function Home({ cart, setCart }) {
   const [sortBy, setSortBy] = useState("");
   const cartIconRef = useRef(null);
 
-  // ✅ BASE URL for your Render backend
+  // ✅ BASE URL (Render backend)
   const BASE_URL = "https://ecommerce-web-qkbn.onrender.com";
 
   // ✅ FETCH PRODUCTS
   useEffect(() => {
     axios.get(`${BASE_URL}/products`)
       .then(res => setProducts(res.data))
-      .catch(err => console.log(err));
+      .catch(err => console.log("Error fetching products:", err));
   }, []);
 
-  // ✅ AI SMART SEARCH
+  // ✅ AI SEARCH
   const fuse = new Fuse(products, {
     keys: ["title", "category"],
     threshold: 0.4,
@@ -31,7 +31,7 @@ function Home({ cart, setCart }) {
 
   let filteredProducts = search
     ? fuse.search(search).map(result => result.item)
-    : products;
+    : [...products]; // ✅ FIX: avoid mutation bug
 
   // ✅ SORTING
   if (sortBy === "price-asc") filteredProducts.sort((a, b) => a.price - b.price);
@@ -43,30 +43,34 @@ function Home({ cart, setCart }) {
   // ✅ ADD TO CART
   const handleAddToCart = (product, e) => {
     const token = localStorage.getItem("token");
+
     if (!token) {
       alert("Please login first");
       window.location.href = "/login";
       return;
     }
 
-    // ✨ Fly animation
-    const img = e.currentTarget.closest(".product-card").querySelector("img");
-    const flyImg = img.cloneNode(true);
-    flyImg.classList.add("fly-img");
+    // ✨ SAFE animation (prevent crash)
+    const img = e?.currentTarget?.closest(".product-card")?.querySelector("img");
 
-    const rect = img.getBoundingClientRect();
-    flyImg.style.top = rect.top + "px";
-    flyImg.style.left = rect.left + "px";
+    if (img) {
+      const flyImg = img.cloneNode(true);
+      flyImg.classList.add("fly-img");
 
-    document.body.appendChild(flyImg);
+      const rect = img.getBoundingClientRect();
+      flyImg.style.top = rect.top + "px";
+      flyImg.style.left = rect.left + "px";
 
-    const cartRect = cartIconRef.current.getBoundingClientRect();
-    flyImg.style.transform = `translate(${cartRect.left - rect.left}px, ${cartRect.top - rect.top}px) scale(0.1)`;
-    flyImg.style.opacity = 0;
+      document.body.appendChild(flyImg);
 
-    setTimeout(() => document.body.removeChild(flyImg), 800);
+      const cartRect = cartIconRef.current.getBoundingClientRect();
+      flyImg.style.transform = `translate(${cartRect.left - rect.left}px, ${cartRect.top - rect.top}px) scale(0.1)`;
+      flyImg.style.opacity = 0;
 
-    // ✅ Add item to cart
+      setTimeout(() => document.body.removeChild(flyImg), 800);
+    }
+
+    // ✅ Add item
     setCart([...cart, product]);
 
     // ✅ Message
@@ -90,6 +94,7 @@ function Home({ cart, setCart }) {
           value={search}
           onChange={(e) => setSearch(e.target.value)}
         />
+
         <select value={sortBy} onChange={(e) => setSortBy(e.target.value)}>
           <option value="">Sort By</option>
           <option value="price-asc">Price Low → High</option>
@@ -106,26 +111,53 @@ function Home({ cart, setCart }) {
         ) : (
           filteredProducts.map(product => (
             <div key={product._id} className="product-card">
+
               {product.isSale && <div className="badge">SALE</div>}
               {product.isNew && <div className="badge new">NEW</div>}
 
               <div className="product-image">
-                <img src={product.image} alt={product.title} />
-                <Link to={`/product/${product._id}`} className="quick-view">Quick View</Link>
+                <img
+                  src={product.image}
+                  alt={product.title}
+                  onError={(e) => {
+                    e.target.src = "https://via.placeholder.com/200";
+                  }}
+                />
+                <Link to={`/product/${product._id}`} className="quick-view">
+                  Quick View
+                </Link>
               </div>
 
               <h3>{product.title}</h3>
               <p className="price">₹{product.price}</p>
 
               <div className="card-buttons">
-                <button className="add-btn" onClick={(e) => handleAddToCart(product, e)}>Add to Cart</button>
+                <button
+                  className="add-btn"
+                  onClick={(e) => handleAddToCart(product, e)}
+                >
+                  Add to Cart
+                </button>
               </div>
+
             </div>
           ))
         )}
       </div>
 
-      <Chatbot products={products} onAddToCart={(product) => setCart([...cart, product])} />
+      {/* ✅ FIX: chatbot add to cart safe */}
+      <Chatbot
+        products={products}
+        onAddToCart={(product) => {
+          const token = localStorage.getItem("token");
+          if (!token) {
+            alert("Please login first");
+            window.location.href = "/login";
+            return;
+          }
+          setCart([...cart, product]);
+        }}
+      />
 
       <div ref={cartIconRef} style={{ position: "fixed", top: 20, right: 40 }}></div>
 

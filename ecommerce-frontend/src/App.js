@@ -15,9 +15,18 @@ function App() {
   const [isLogin, setIsLogin] = useState(false);
 
   // ✅ Load token and cart from localStorage
-  useEffect(() => {
+ useEffect(() => {
+  const checkLogin = () => {
     const token = localStorage.getItem("token");
-    if (token) setIsLogin(true);
+    setIsLogin(!!token);
+  };
+
+  checkLogin();
+
+  window.addEventListener("storage", checkLogin);
+
+  return () => window.removeEventListener("storage", checkLogin);
+}, []);
 
     const savedCart = JSON.parse(localStorage.getItem("cart")) || [];
     setCart(savedCart);
