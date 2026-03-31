@@ -13,7 +13,7 @@ function ProductDetails({ cart, setCart }) {
 
   // ✅ GET SINGLE PRODUCT
   useEffect(() => {
-    axios.get(`${BASE_URL}/products/${id}`)
+    axios.get(`${BASE_URL}/api/products/${id}`)
       .then(res => setProduct(res.data))
       .catch(err => {
         console.log("Error fetching product:", err);
@@ -22,7 +22,7 @@ function ProductDetails({ cart, setCart }) {
 
   // ✅ GET ALL PRODUCTS
   useEffect(() => {
-    axios.get(`${BASE_URL}/products`)
+   axios.get(`${BASE_URL}/api/products`)
       .then(res => setProducts(res.data))
       .catch(err => {
         console.log("Error fetching products:", err);

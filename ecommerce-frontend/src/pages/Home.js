@@ -18,7 +18,7 @@ function Home({ cart, setCart }) {
 
   // ✅ FETCH PRODUCTS
   useEffect(() => {
-    axios.get(`${BASE_URL}/products`)
+    axios.get(`${BASE_URL}/api/products`)
       .then(res => setProducts(res.data))
       .catch(err => console.log("Error fetching products:", err));
   }, []);
