@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import API from "../api";
 import "./Orders.css";
 
 function Orders() {
@@ -24,52 +25,56 @@ function Orders() {
   };
 
   // =========================
-  // LOAD ORDERS FROM LOCAL
+  // FETCH FROM BACKEND
   // =========================
   useEffect(() => {
-    const saved = JSON.parse(localStorage.getItem("orders")) || [];
+    const fetchOrders = async () => {
+      try {
+        const res = await API.get("/api/orders");
 
-    const updatedOrders = saved.map(order => {
-      const orderDate = order.date ? new Date(order.date) : new Date();
-      const today = new Date();
+        const updatedOrders = res.data.map(order => {
+          const orderDate = new Date(order.date);
+          const today = new Date();
 
-      const diffDays = Math.floor(
-        (today - orderDate) / (1000 * 60 * 60 * 24)
-      );
+          const diffDays = Math.floor(
+            (today - orderDate) / (1000 * 60 * 60 * 24)
+          );
 
-      // STATUS
-      let status = "Order Placed";
-      if (diffDays >= 1) status = "Packed";
-      if (diffDays >= 2) status = "Shipped";
-      if (diffDays >= 3) status = "Delivered";
+          let status = "Order Placed";
+          if (diffDays >= 1) status = "Packed";
+          if (diffDays >= 2) status = "Shipped";
+          if (diffDays >= 3) status = "Delivered";
 
-      // DELIVERY DAYS
-      const totalDays = order.totalDays || getAIDeliveryDays(order);
-      const remainingDays = Math.max(totalDays - diffDays, 0);
+          const totalDays = getAIDeliveryDays(order);
+          const remainingDays = Math.max(totalDays - diffDays, 0);
 
-      return {
-        ...order,
-        status,
-        totalDays,
-        remainingDays,
-        date: order.date || new Date().toISOString()
-      };
-    });
+          return {
+            ...order,
+            status,
+            remainingDays
+          };
+        });
 
-    setOrders(updatedOrders);
-    localStorage.setItem("orders", JSON.stringify(updatedOrders));
+        setOrders(updatedOrders);
 
+      } catch (err) {
+        console.log(err);
+      }
+    };
+
+    fetchOrders();
   }, []);
 
   // =========================
   // DELETE ORDER
   // =========================
-  const deleteOrder = (index) => {
-    const updated = [...orders];
-    updated.splice(index, 1);
-
-    setOrders(updated);
-    localStorage.setItem("orders", JSON.stringify(updated));
+  const deleteOrder = async (id) => {
+    try {
+      await API.delete(`/api/orders/${id}`);
+      setOrders(orders.filter(o => o._id !== id));
+    } catch (err) {
+      console.log(err);
+    }
   };
 
   return (
@@ -81,10 +86,9 @@ function Orders() {
       ) : (
         <div className="orders-grid">
 
-          {orders.map((order, index) => (
-            <div key={index} className="order-card">
+          {orders.map(order => (
+            <div key={order._id} className="order-card">
 
-              {/* IMAGE FIX */}
               <img
                 src={order.image || "https://via.placeholder.com/200"}
                 alt={order.title}
@@ -93,13 +97,11 @@ function Orders() {
               <h4>{order.title}</h4>
               <p>₹{order.price}</p>
 
-              <p><b>ID:</b> {order.id}</p>
+              <p><b>ID:</b> {order._id}</p>
 
               <p>
                 <b>Date:</b>{" "}
-                {order.date
-                  ? new Date(order.date).toLocaleString()
-                  : "Just Now"}
+                {new Date(order.date).toLocaleString()}
               </p>
 
               <p><b>Payment:</b> {order.payment}</p>
@@ -115,18 +117,7 @@ function Orders() {
                 {order.status}
               </p>
 
-              <button
-                onClick={() => deleteOrder(index)}
-                style={{
-                  marginTop: "10px",
-                  padding: "6px 12px",
-                  backgroundColor: "#e74c3c",
-                  color: "white",
-                  border: "none",
-                  borderRadius: "6px",
-                  cursor: "pointer"
-                }}
-              >
+              <button onClick={() => deleteOrder(order._id)}>
                 Delete
               </button>
 
