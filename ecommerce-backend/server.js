@@ -1,21 +1,23 @@
+// server.js
 const express = require("express");
 const mongoose = require("mongoose");
 const cors = require("cors");
-const Product = require("./models/Product"); // Product model
-const User = require("./models/User");       // User model
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
-// 🔐 AUTH MIDDLEWARE
+require("dotenv").config();
+
+// Models
+const Product = require("./models/Product");
+const User = require("./models/User");
+
+// ---------------- AUTH MIDDLEWARE ----------------
 const authMiddleware = (req, res, next) => {
+  const token = req.headers["authorization"]; // your existing line is correct
 
-  const token = req.headers["authorization"];
-
-  if (!token) {
-    return res.status(401).json({ message: "No token, access denied" });
-  }
+  if (!token) return res.status(401).json({ message: "No token, access denied" });
 
   try {
-    const verified = jwt.verify(token, "mySecretKey");
+    const verified = jwt.verify(token, process.env.JWT_SECRET || "mySecretKey");
     req.user = verified;
     next();
   } catch (err) {
@@ -23,65 +25,40 @@ const authMiddleware = (req, res, next) => {
   }
 };
 
-const app = express();   // app init
+// ---------------- APP INIT ----------------
+const app = express();
 app.use(cors());
 app.use(express.json());
 
-//mongoose connect
-mongoose.connect("mongodb://localhost:27017/ecommerce")
-.then(() => console.log("MongoDB Local connected"))
-.catch(err => console.log(err));
+// ---------------- MONGODB ATLAS CONNECTION ----------------
+// ---------- MONGODB ATLAS CONNECTION ----------
+const MONGO_URI = "mongodb+srv://ankushi7:ankushi46@cluster0.one8vue.mongodb.net/?appName=Cluster0";
 
-
-// ------------------- TEST ROUTE -------------------
-app.get("/products/:id", async (req, res) => {
-  try {
-    const product = await Product.findById(req.params.id);
-
-    console.log("Fetched product:", product); // 🔴 DEBUG
-
-    if (!product) {
-      return res.status(404).json(null); // ✅ send null instead
-    }
-
-    res.json(product);
-
-  } catch (err) {
-    console.log(err);
-    res.status(500).json({ error: "Invalid ID format" });
-  }
-});
-// ------------------- SIGNUP -------------------
+mongoose.connect(MONGO_URI)
+  .then(() => console.log("✅ MongoDB Atlas connected"))
+  .catch(err => console.log("❌ MongoDB Error:", err));
+// ---------------- SIGNUP ----------------
 app.post("/api/signup", async (req, res) => {
   try {
     const { name, email, password } = req.body;
-    if (!name || !email || !password)
-      return res.status(400).json({ message: "All fields required" });
+    if (!name || !email || !password) return res.status(400).json({ message: "All fields required" });
 
     const oldUser = await User.findOne({ email });
     if (oldUser) return res.status(400).json({ message: "User already exists" });
 
     const hashedPassword = await bcrypt.hash(password, 10);
-
-    const user = await User.create({
-  name,
-  email,
-  password: hashedPassword,
-  isAdmin: false
-});
-
+    const user = await User.create({ name, email, password: hashedPassword, isAdmin: false });
 
     res.status(201).json({
       message: "Signup successful",
       user: { id: user._id, name: user.name, email: user.email }
     });
-
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 });
 
-// ------------------- LOGIN -------------------
+// ---------------- LOGIN ----------------
 app.post("/api/login", async (req, res) => {
   try {
     const { email, password } = req.body;
@@ -92,24 +69,18 @@ app.post("/api/login", async (req, res) => {
     if (!isMatch) return res.status(400).json({ message: "Wrong password" });
 
     const token = jwt.sign(
-  { id: user._id, isAdmin: user.isAdmin },
-  "mySecretKey",
-  { expiresIn: "1d" }
-);
+      { id: user._id, isAdmin: user.isAdmin },
+      process.env.JWT_SECRET || "mySecretKey",
+      { expiresIn: "1d" }
+    );
 
-
-    res.json({
-      message: "Login successful",
-      token,
-      user: { id: user._id, name: user.name, email: user.email }
-    });
-
+    res.json({ message: "Login successful", token, user: { id: user._id, name: user.name, email: user.email } });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 });
 
-// ------------------- PRODUCTS CRUD -------------------
+// ---------------- PRODUCTS CRUD ----------------
 
 // CREATE product (protected)
 app.post("/products", authMiddleware, async (req, res) => {
@@ -128,11 +99,15 @@ app.get("/products", async (req, res) => {
   res.json(products);
 });
 
-// READ product by id
+// READ product by ID
 app.get("/products/:id", async (req, res) => {
-  const product = await Product.findById(req.params.id);
-  if (!product) return res.json({ message: "Product not found" });
-  res.json(product);
+  try {
+    const product = await Product.findById(req.params.id);
+    if (!product) return res.status(404).json({ message: "Product not found" });
+    res.json(product);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
 // UPDATE product (protected)
@@ -147,7 +122,6 @@ app.delete("/products/:id", authMiddleware, async (req, res) => {
   res.json({ message: "Product deleted" });
 });
 
-// ------------------- START SERVER -------------------
-app.listen(5000, () => {
-  console.log("Server running on http://localhost:5000");
-});
+// ---------------- START SERVER ----------------
+const PORT = process.env.PORT || 5000;
+app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
