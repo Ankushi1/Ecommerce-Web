@@ -107,7 +107,7 @@ function Home({ cart, setCart }) {
 
       <div className="products-grid">
         {filteredProducts.length === 0 ? (
-          <h3 className="no-products">No products found</h3>
+          <h3 className="no-products">Loading products...</h3>
         ) : (
           filteredProducts.map(product => (
             <div key={product._id} className="product-card">
