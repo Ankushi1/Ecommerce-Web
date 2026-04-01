@@ -10,11 +10,13 @@ function Signup() {
   const [password, setPassword] = useState("");
   const [msg, setMsg] = useState("");
 
+  const BASE_URL = "https://ecommerce-web-qkbn.onrender.com";
+
   const handleSignup = async (e) => {
     e.preventDefault();
 
     try {
-      const res = await axios.post("http://localhost:5000/api/signup", {
+      await axios.post(`${BASE_URL}/api/signup`, {
         name,
         email,
         password,
@@ -26,13 +28,17 @@ function Signup() {
       setEmail("");
       setPassword("");
 
-      // ✅ Auto redirect to login
       setTimeout(() => {
         navigate("/login");
-      }, 1500);
+      }, 1000);
 
     } catch (err) {
-      setMsg(err.response?.data?.message || "Signup failed ❌");
+      console.log("Signup Error:", err); // ✅ DEBUG
+
+      setMsg(
+        err.response?.data?.message ||
+        "Server error. Please try again ❌"
+      );
     }
   };
 

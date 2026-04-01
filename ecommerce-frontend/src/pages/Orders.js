@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import API from "../api";
 import "./Orders.css";
 
 function Orders() {
@@ -8,70 +9,71 @@ function Orders() {
   // AI DELIVERY DAYS FUNCTION
   // =========================
   const getAIDeliveryDays = (order) => {
-    let days = 3; // base delivery
+    let days = 3;
 
-    // Category logic
     if (order.category === "gown") days += 3;
     if (order.category === "ring" || order.category === "bracelet") days += 1;
     if (order.category === "necklace") days += 2;
 
-    // Price logic
     if (order.price > 2000) days += 1;
     if (order.price > 10000) days += 2;
 
-    // Random delay (only first time)
     const randomDelay = Math.floor(Math.random() * 2);
     days += randomDelay;
 
     return days;
   };
 
+  // =========================
+  // FETCH FROM BACKEND
+  // =========================
   useEffect(() => {
-    const saved = JSON.parse(localStorage.getItem("orders")) || [];
+    const fetchOrders = async () => {
+      try {
+        const res = await API.get("/api/orders");
 
-    const updatedOrders = saved.map(order => {
+        const updatedOrders = res.data.map((order) => {
+          const orderDate = new Date(order.date);
+          const today = new Date();
 
-      // ✅ SAFE DATE (fix invalid date issue)
-      const orderDate = order.date ? new Date(order.date) : new Date();
-      const today = new Date();
+          const diffDays = Math.floor(
+            (today - orderDate) / (1000 * 60 * 60 * 24)
+          );
 
-      const diffDays = Math.floor(
-        (today - orderDate) / (1000 * 60 * 60 * 24)
-      );
+          let status = "Order Placed";
+          if (diffDays >= 1) status = "Packed";
+          if (diffDays >= 2) status = "Shipped";
+          if (diffDays >= 3) status = "Delivered";
 
-      // =========================
-      // STATUS TRACKING
-      // =========================
-      let status = "Order Placed";
-      if (diffDays >= 1) status = "Packed";
-      if (diffDays >= 2) status = "Shipped";
-      if (diffDays >= 3) status = "Delivered";
+          const totalDays = getAIDeliveryDays(order);
+          const remainingDays = Math.max(totalDays - diffDays, 0);
 
-      // =========================
-      // AI DELIVERY DAYS (STABLE)
-      // =========================
-      const totalDays = order.totalDays || getAIDeliveryDays(order);
-      const remainingDays = Math.max(totalDays - diffDays, 0);
+          return {
+            ...order,
+            status,
+            remainingDays,
+          };
+        });
 
-      return {
-        ...order,
-        status,
-        totalDays,
-        remainingDays,
-        date: order.date || new Date().toISOString() // fix old orders
-      };
-    });
+        setOrders(updatedOrders);
+      } catch (err) {
+        console.log(err);
+      }
+    };
 
-    setOrders(updatedOrders);
-    localStorage.setItem("orders", JSON.stringify(updatedOrders));
-
+    fetchOrders();
   }, []);
 
-  const deleteOrder = (index) => {
-    const updated = [...orders];
-    updated.splice(index, 1);
-    setOrders(updated);
-    localStorage.setItem("orders", JSON.stringify(updated));
+  // =========================
+  // DELETE ORDER
+  // =========================
+  const deleteOrder = async (id) => {
+    try {
+      await API.delete(`/api/orders/${id}`);
+      setOrders(orders.filter((o) => o._id !== id));
+    } catch (err) {
+      console.log(err);
+    }
   };
 
   return (
@@ -82,66 +84,49 @@ function Orders() {
         <p>No Orders Yet</p>
       ) : (
         <div className="orders-grid">
-
-          {orders.map((order, index) => (
-            <div key={index} className="order-card">
-
-              {/* IMAGE FIX */}
+          {orders.map((order) => (
+            <div key={order._id} className="order-card">
               <img
-                src={
-                  order.image?.startsWith("http")
-                    ? order.image
-                    : `http://localhost:5000${order.image}`
-                }
+                src={order.image || "https://via.placeholder.com/200"}
                 alt={order.title}
               />
 
               <h4>{order.title}</h4>
               <p>₹{order.price}</p>
 
-              <p><b>ID:</b> {order.id}</p>
-
-              {/* ✅ FIXED DATE DISPLAY */}
               <p>
-                <b>Date:</b>{" "}
-                {order.date
-                  ? new Date(order.date).toLocaleString()
-                  : "Just Now"}
+                <b>ID:</b> {order._id}
               </p>
 
-              <p><b>Payment:</b> {order.payment}</p>
+              <p>
+                <b>Date:</b> {new Date(order.date).toLocaleString()}
+              </p>
 
-              {/* ✅ AI DELIVERY IN DAYS */}
+              <p>
+                <b>Payment:</b> {order.payment}
+              </p>
+
               <p>
                 <b>Delivery:</b>{" "}
                 {order.remainingDays > 0
                   ? `Arriving in ${order.remainingDays} day(s)`
-                  : "Delivered"} <br />
-              
+                  : "Delivered"}
               </p>
 
-              {/* STATUS */}
-              <p className={`status ${order.status}`}>
+              {/* ✅ Status color fix */}
+              <p className={`status ${order.status.replace(" ", "-")}`}>
                 {order.status}
               </p>
 
+              {/* ✅ Delete button fix */}
               <button
-  onClick={() => deleteOrder(index)}
-  style={{
-    marginTop: "10px",
-    padding: "6px 12px",
-    backgroundColor: "#e74c3c", // red
-    color: "white",
-    border: "none",
-    borderRadius: "6px",
-    cursor: "pointer"
-  }}
->
-  Delete
-</button>
+                className="delete-btn"
+                onClick={() => deleteOrder(order._id)}
+              >
+                Delete
+              </button>
             </div>
           ))}
-
         </div>
       )}
     </div>

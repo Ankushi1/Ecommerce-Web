@@ -7,21 +7,23 @@ import Chatbot from "../components/Chatbot";
 
 function Home({ cart, setCart }) {
 
-  // ✅ STATES
   const [products, setProducts] = useState([]);
   const [search, setSearch] = useState("");
   const [msg, setMsg] = useState("");
   const [sortBy, setSortBy] = useState("");
   const cartIconRef = useRef(null);
 
+  // ✅ BASE URL (Render backend)
+  const BASE_URL = "https://ecommerce-web-qkbn.onrender.com";
+
   // ✅ FETCH PRODUCTS
   useEffect(() => {
-    axios.get("http://localhost:5000/products")
+    axios.get(`${BASE_URL}/api/products`)
       .then(res => setProducts(res.data))
-      .catch(err => console.log(err));
+      .catch(err => console.log("Error fetching products:", err));
   }, []);
 
-  // ✅ AI SMART SEARCH
+  // ✅ AI SEARCH
   const fuse = new Fuse(products, {
     keys: ["title", "category"],
     threshold: 0.4,
@@ -29,20 +31,14 @@ function Home({ cart, setCart }) {
 
   let filteredProducts = search
     ? fuse.search(search).map(result => result.item)
-    : products;
+    : [...products]; // ✅ FIX: avoid mutation bug
 
   // ✅ SORTING
-  if (sortBy === "price-asc") {
-    filteredProducts.sort((a, b) => a.price - b.price);
-  } else if (sortBy === "price-desc") {
-    filteredProducts.sort((a, b) => b.price - a.price);
-  } else if (sortBy === "name-asc") {
-    filteredProducts.sort((a, b) => a.title.localeCompare(b.title));
-  } else if (sortBy === "name-desc") {
-    filteredProducts.sort((a, b) => b.title.localeCompare(a.title));
-  } else if (sortBy === "newest") {
-    filteredProducts.sort((a, b) => (b.isNew ? 1 : -1));
-  }
+  if (sortBy === "price-asc") filteredProducts.sort((a, b) => a.price - b.price);
+  else if (sortBy === "price-desc") filteredProducts.sort((a, b) => b.price - a.price);
+  else if (sortBy === "name-asc") filteredProducts.sort((a, b) => a.title.localeCompare(b.title));
+  else if (sortBy === "name-desc") filteredProducts.sort((a, b) => b.title.localeCompare(a.title));
+  else if (sortBy === "newest") filteredProducts.sort((a, b) => (b.isNew ? 1 : -1));
 
   // ✅ ADD TO CART
   const handleAddToCart = (product, e) => {
@@ -54,22 +50,25 @@ function Home({ cart, setCart }) {
       return;
     }
 
-    // ✨ Fly animation
-    const img = e.currentTarget.closest(".product-card").querySelector("img");
-    const flyImg = img.cloneNode(true);
-    flyImg.classList.add("fly-img");
+    // ✨ SAFE animation (prevent crash)
+    const img = e?.currentTarget?.closest(".product-card")?.querySelector("img");
 
-    const rect = img.getBoundingClientRect();
-    flyImg.style.top = rect.top + "px";
-    flyImg.style.left = rect.left + "px";
+    if (img) {
+      const flyImg = img.cloneNode(true);
+      flyImg.classList.add("fly-img");
 
-    document.body.appendChild(flyImg);
+      const rect = img.getBoundingClientRect();
+      flyImg.style.top = rect.top + "px";
+      flyImg.style.left = rect.left + "px";
 
-    const cartRect = cartIconRef.current.getBoundingClientRect();
-    flyImg.style.transform = `translate(${cartRect.left - rect.left}px, ${cartRect.top - rect.top}px) scale(0.1)`;
-    flyImg.style.opacity = 0;
+      document.body.appendChild(flyImg);
 
-    setTimeout(() => document.body.removeChild(flyImg), 800);
+      const cartRect = cartIconRef.current.getBoundingClientRect();
+      flyImg.style.transform = `translate(${cartRect.left - rect.left}px, ${cartRect.top - rect.top}px) scale(0.1)`;
+      flyImg.style.opacity = 0;
+
+      setTimeout(() => document.body.removeChild(flyImg), 800);
+    }
 
     // ✅ Add item
     setCart([...cart, product]);
@@ -82,17 +81,13 @@ function Home({ cart, setCart }) {
   return (
     <div className="home-container">
 
-      {/* ✅ Success Message */}
       {msg && <div className="success-msg">{msg}</div>}
 
-      {/* ✅ Banner */}
       <div className="hero-banner">
         <span>Welcome to Fashion Hub! Huge Sale Today – Up to 50% Off!</span>
       </div>
 
-      {/* ✅ Search + Sort */}
       <div className="search-sort">
-
         <input
           type="text"
           placeholder="Search products..."
@@ -108,38 +103,34 @@ function Home({ cart, setCart }) {
           <option value="name-desc">Name Z → A</option>
           <option value="newest">Newest</option>
         </select>
-
       </div>
 
-      {/* ✅ Products */}
       <div className="products-grid">
-
         {filteredProducts.length === 0 ? (
-          <h3 className="no-products">No products found</h3>
+          <h3 className="no-products">Loading products...</h3>
         ) : (
-
           filteredProducts.map(product => (
-
             <div key={product._id} className="product-card">
 
-              {/* Badges */}
               {product.isSale && <div className="badge">SALE</div>}
               {product.isNew && <div className="badge new">NEW</div>}
 
-              {/* Image */}
               <div className="product-image">
-                <img src={product.image} alt={product.title} />
-
+                <img
+                  src={product.image}
+                  alt={product.title}
+                  onError={(e) => {
+                    e.target.src = "https://via.placeholder.com/200";
+                  }}
+                />
                 <Link to={`/product/${product._id}`} className="quick-view">
                   Quick View
                 </Link>
               </div>
 
-              {/* Info */}
               <h3>{product.title}</h3>
               <p className="price">₹{product.price}</p>
 
-              {/* ✅ BUTTON FIXED */}
               <div className="card-buttons">
                 <button
                   className="add-btn"
@@ -150,24 +141,25 @@ function Home({ cart, setCart }) {
               </div>
 
             </div>
-
           ))
-
         )}
-
       </div>
 
-      {/* ✅ CHATBOT */}
-      <Chatbot 
-        products={products} 
-        onAddToCart={(product) => setCart([...cart, product])}
+      {/* ✅ FIX: chatbot add to cart safe */}
+      <Chatbot
+        products={products}
+        onAddToCart={(product) => {
+          const token = localStorage.getItem("token");
+          if (!token) {
+            alert("Please login first");
+            window.location.href = "/login";
+            return;
+          }
+          setCart([...cart, product]);
+        }}
       />
 
-      {/* Invisible Cart Ref */}
-      <div
-        ref={cartIconRef}
-        style={{ position: "fixed", top: 20, right: 40 }}
-      ></div>
+      <div ref={cartIconRef} style={{ position: "fixed", top: 20, right: 40 }}></div>
 
     </div>
   );
