@@ -41,10 +41,13 @@ app.use(cors());
 app.use(express.json());
 
 // ---------------- MONGODB ATLAS CONNECTION ----------------
-const MONGO_URI = "mongodb+srv://ankushivishwakarma01_db_user:ankushi7@cluster0.bdkdrlw.mongodb.net/ecommerce?retryWrites=true&w=majority";
-mongoose.connect(MONGO_URI)
+const MONGO_URI =
+  "mongodb+srv://ankushi7:ankushi46@cluster0.one8vue.mongodb.net/ecommerce?retryWrites=true&w=majority";
+
+mongoose
+  .connect(MONGO_URI)
   .then(() => console.log("✅ MongoDB Atlas connected"))
-  .catch(err => console.log("❌ MongoDB Error:", err));
+  .catch((err) => console.log("❌ MongoDB Error:", err));
 // ---------------- SIGNUP ----------------
 app.post("/api/signup", async (req, res) => {
   try {
