@@ -9,27 +9,38 @@ function Login({ setIsLogin }) {
   const [password, setPassword] = useState("");
   const [msg, setMsg] = useState("");
 
+  const BASE_URL = "https://ecommerce-web-qkbn.onrender.com";
+
   const handleLogin = async (e) => {
     e.preventDefault();
 
     try {
-      const res = await axios.post("http://localhost:5000/api/login", {
+      const res = await axios.post(`${BASE_URL}/api/login`, {
         email,
         password,
       });
 
       // ✅ Save token
       localStorage.setItem("token", res.data.token);
+
+      // ✅ optional: save user
+      localStorage.setItem("user", JSON.stringify(res.data.user));
+
       setIsLogin(true);
       setMsg("Login successful ✅");
 
-      // ✅ Auto redirect after login
+      // ✅ redirect
       setTimeout(() => {
-        navigate("/"); // home page
-      }, 1000);
+        navigate("/");
+      }, 800);
 
     } catch (err) {
-      setMsg(err.response?.data?.message || "Login failed ❌");
+      console.log("Login Error:", err); // ✅ DEBUG
+
+      setMsg(
+        err.response?.data?.message ||
+        "Server error. Please try again ❌"
+      );
     }
   };
 

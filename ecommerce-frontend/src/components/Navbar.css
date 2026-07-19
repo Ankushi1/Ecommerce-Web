@@ -10,12 +10,10 @@
   z-index: 100;
   font-family: 'Poppins', sans-serif;
   box-shadow: 0 6px 20px rgba(0,0,0,0.3);
-  transition: all 0.3s ease;
 }
 
-.navbar:hover {
-  box-shadow: 0 10px 30px rgba(0,0,0,0.4);
-}
+
+/* BRAND */
 
 .navbar-brand a {
   color: #ffd700;
@@ -23,18 +21,17 @@
   font-size: 24px;
   text-decoration: none;
   letter-spacing: 1px;
-  transition: transform 0.3s;
 }
 
-.navbar-brand a:hover {
-  transform: scale(1.05);
-}
+
+/* LINKS */
 
 .navbar-links {
   display: flex;
-  gap: 25px;
   align-items: center;
+  gap: 25px;
 }
+
 
 .navbar-links a {
   color: white;
@@ -42,8 +39,8 @@
   font-weight: 500;
   position: relative;
   padding: 5px 0;
-  transition: color 0.3s;
 }
+
 
 .navbar-links a::after {
   content: "";
@@ -56,49 +53,136 @@
   transition: width 0.3s;
 }
 
+
 .navbar-links a:hover::after {
-  width: 100%;
+  width:100%;
 }
+
 
 .navbar-links a:hover {
-  color: #ffd700;
+  color:#ffd700;
 }
+
+
+
+/* CART COUNT */
 
 .cart-link {
-  position: relative;
+  position:relative;
 }
+
 
 .cart-count {
-  position: absolute;
-  top: -10px;
-  right: -14px;
-  background: #e74c3c;
-  color: white;
-  border-radius: 50%;
-  padding: 3px 7px;
-  font-size: 12px;
-  font-weight: bold;
-  animation: pop 0.3s ease;
+  position:absolute;
+  top:-12px;
+  right:-15px;
+  background:#e74c3c;
+  color:white;
+  border-radius:50%;
+  padding:3px 7px;
+  font-size:12px;
+  font-weight:bold;
 }
 
-@keyframes pop {
-  0% { transform: scale(0.6); }
-  50% { transform: scale(1.2); }
-  100% { transform: scale(1); }
-}
+
+
+/* LOGOUT BUTTON */
 
 .logout-btn {
-  padding: 6px 18px;
-  border-radius: 10px;
-  border: none;
-  background: #e74c3c;
-  color: white;
-  cursor: pointer;
-  font-weight: 500;
-  transition: background 0.3s, transform 0.2s;
+
+  padding:7px 18px;
+  border-radius:10px;
+  border:none;
+  background:#e74c3c;
+  color:white;
+  cursor:pointer;
+  font-weight:500;
+
 }
 
+
 .logout-btn:hover {
-  background: #c0392b;
-  transform: scale(1.05);
+
+  background:#c0392b;
+
+}
+
+
+
+/* ========================= */
+/* MOBILE RESPONSIVE */
+/* ========================= */
+
+
+@media(max-width:768px){
+
+
+.navbar{
+
+  flex-direction:column;
+  padding:15px;
+  gap:15px;
+
+}
+
+
+
+.navbar-brand a{
+
+  font-size:22px;
+
+}
+
+
+
+.navbar-links{
+
+  width:100%;
+  display:flex;
+  flex-wrap:wrap;
+  justify-content:center;
+  gap:15px;
+
+}
+
+
+
+.navbar-links a{
+
+  font-size:14px;
+
+}
+
+
+
+.logout-btn{
+
+  padding:6px 14px;
+
+}
+
+
+
+}
+
+
+
+@media(max-width:400px){
+
+
+.navbar-links{
+
+  gap:10px;
+
+}
+
+
+.navbar-links a{
+
+ font-size:13px;
+
+}
+
+
+
 }
