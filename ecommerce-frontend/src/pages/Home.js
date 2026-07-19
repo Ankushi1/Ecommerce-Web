@@ -14,7 +14,7 @@ function Home({ cart, setCart }) {
   const cartIconRef = useRef(null);
 
   // ✅ BASE URL (Render backend)
-  const BASE_URL = "https://ecommerce-web-1-25wp.onrender.com";
+  const BASE_URL = "https://ecommerce-web-qkbn.onrender.com";
 
   // ✅ FETCH PRODUCTS
   useEffect(() => {

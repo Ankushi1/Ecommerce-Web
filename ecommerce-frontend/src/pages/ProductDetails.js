@@ -9,7 +9,7 @@ function ProductDetails({ cart, setCart }) {
   const [products, setProducts] = useState([]);
   const [msg, setMsg] = useState("");
 
-  const BASE_URL = "https://ecommerce-web-1-25wp.onrender.com";
+  const BASE_URL = "https://ecommerce-web-qkbn.onrender.com";
 
   // ✅ GET SINGLE PRODUCT
   useEffect(() => {

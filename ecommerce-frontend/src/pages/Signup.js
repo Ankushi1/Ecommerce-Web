@@ -10,7 +10,7 @@ function Signup() {
   const [password, setPassword] = useState("");
   const [msg, setMsg] = useState("");
 
-  const BASE_URL = "https://ecommerce-web-1-25wp.onrender.com";
+  const BASE_URL = "https://ecommerce-web-qkbn.onrender.com";
 
   const handleSignup = async (e) => {
     e.preventDefault();
