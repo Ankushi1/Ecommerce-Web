@@ -15,21 +15,14 @@ const app = express();
 
 // ================= MIDDLEWARE =================
 
-app.use(
-cors({
-origin:[
-"https://your-vercel-app.vercel.app",
-"http://localhost:3000"
-],
-methods:["GET","POST","PUT","DELETE"],
-allowedHeaders:[
-"Content-Type",
-"Authorization"
-]
-})
-);
-
-
+app.use(cors({
+  origin: [
+    "https://ecommerce-web-one-mu.vercel.app",
+    "http://localhost:3000"
+  ],
+  methods: ["GET","POST","PUT","DELETE"],
+  allowedHeaders: ["Content-Type","Authorization"]
+}));
 app.use(express.json());
 
 
