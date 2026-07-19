@@ -1,192 +1,485 @@
-// server.js
 const express = require("express");
 const mongoose = require("mongoose");
 const cors = require("cors");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
-const Order = require("./models/Order");
 require("dotenv").config();
 
-// Models
 const Product = require("./models/Product");
 const User = require("./models/User");
+const Order = require("./models/Order");
 
-// ---------------- AUTH MIDDLEWARE ----------------
-const authMiddleware = (req, res, next) => {
-  const authHeader = req.headers["authorization"];
 
-  if (!authHeader) {
-    return res.status(401).json({ message: "No token, access denied" });
-  }
-
-  // ✅ Extract token from "Bearer TOKEN"
-  const token = authHeader.split(" ")[1];
-
-  if (!token) {
-    return res.status(401).json({ message: "Token missing" });
-  }
-
-  try {
-    const verified = jwt.verify(token, process.env.JWT_SECRET || "mySecretKey");
-    req.user = verified;
-    next();
-  } catch (err) {
-    return res.status(400).json({ message: "Invalid token" });
-  }
-};
-
-// ---------------- APP INIT ----------------
 const app = express();
-app.use(cors());
+
+
+// ================= MIDDLEWARE =================
+
+app.use(
+cors({
+origin:[
+"https://your-vercel-app.vercel.app",
+"http://localhost:3000"
+],
+methods:["GET","POST","PUT","DELETE"],
+allowedHeaders:[
+"Content-Type",
+"Authorization"
+]
+})
+);
+
+
 app.use(express.json());
 
-// ---------------- MONGODB ATLAS CONNECTION ----------------
-const MONGO_URI =
-  "mongodb+srv://ankushi7:ankushi46@cluster0.one8vue.mongodb.net/ecommerce?retryWrites=true&w=majority";
 
-mongoose
-  .connect(MONGO_URI)
-  .then(() => console.log("✅ MongoDB Atlas connected"))
-  .catch((err) => console.log("❌ MongoDB Error:", err));
-// ---------------- SIGNUP ----------------
-app.post("/api/signup", async (req, res) => {
-  try {
-    const { name, email, password } = req.body;
-    if (!name || !email || !password) return res.status(400).json({ message: "All fields required" });
 
-    const oldUser = await User.findOne({ email });
-    if (oldUser) return res.status(400).json({ message: "User already exists" });
+// ================= DATABASE =================
 
-    const hashedPassword = await bcrypt.hash(password, 10);
-    const user = await User.create({ name, email, password: hashedPassword, isAdmin: false });
 
-    res.status(201).json({
-      message: "Signup successful",
-      user: { id: user._id, name: user.name, email: user.email }
-    });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
+const MONGO_URI = process.env.MONGO_URI;
 
-// ---------------- LOGIN ----------------
-app.post("/api/login", async (req, res) => {
-  try {
-    const { email, password } = req.body;
-    const user = await User.findOne({ email });
-    if (!user) return res.status(400).json({ message: "User not found" });
 
-    const isMatch = await bcrypt.compare(password, user.password);
-    if (!isMatch) return res.status(400).json({ message: "Wrong password" });
-
-    const token = jwt.sign(
-      { id: user._id, isAdmin: user.isAdmin },
-      process.env.JWT_SECRET || "mySecretKey",
-      { expiresIn: "1d" }
-    );
-
-    res.json({ message: "Login successful", token, user: { id: user._id, name: user.name, email: user.email } });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
-
-// ---------------- PRODUCTS CRUD ----------------
-
-// CREATE product (protected)
-app.post("/api/products", authMiddleware, async (req, res) => {
-  try {
-    const newProduct = new Product(req.body);
-    const saved = await newProduct.save();
-    res.json(saved);
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
-
-// READ all products
-app.get("/api/products", async (req, res) => {
-  try {
-    const products = await Product.find();
-    res.json(products);
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
-
-// READ product by ID
-app.get("/api/products/:id", async (req, res) => {
-  try {
-    const product = await Product.findById(req.params.id);
-    if (!product) return res.status(404).json({ message: "Product not found" });
-    res.json(product);
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
-
-// UPDATE product (protected)
-app.put("/api/products/:id", authMiddleware, async (req, res) => {
-  try {
-    const updated = await Product.findByIdAndUpdate(req.params.id, req.body, { new: true });
-    res.json(updated);
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
-
-// DELETE product (protected)
-app.delete("/api/products/:id", authMiddleware, async (req, res) => {
-  try {
-    await Product.findByIdAndDelete(req.params.id);
-    res.json({ message: "Product deleted" });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
+mongoose.connect(MONGO_URI)
+.then(()=>{
+console.log("MongoDB Connected");
+})
+.catch(err=>{
+console.log("Mongo Error:",err.message);
 });
 
 
 
-// ================= ORDER ROUTES =================
 
-// CREATE ORDER
-app.post("/api/orders", authMiddleware, async (req, res) => {
-  try {
-    const orders = req.body;
+// ================= HEALTH CHECK =================
 
-    const savedOrders = await Order.insertMany(
-      orders.map(order => ({
-        ...order,
-        userId: req.user.id
-      }))
-    );
 
-    res.json(savedOrders);
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
+app.get("/",(req,res)=>{
+res.json({
+status:"Running",
+message:"Fashion Hub Backend"
+});
 });
 
-// GET USER ORDERS
-app.get("/api/orders", authMiddleware, async (req, res) => {
-  try {
-    const orders = await Order.find({ userId: req.user.id });
-    res.json(orders);
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
+
+
+
+// ================= AUTH =================
+
+
+const authMiddleware=(req,res,next)=>{
+
+const header=req.headers.authorization;
+
+
+if(!header){
+return res.status(401).json({
+message:"Login required"
+});
+}
+
+
+const token=header.split(" ")[1];
+
+
+try{
+
+const decoded=jwt.verify(
+token,
+process.env.JWT_SECRET
+);
+
+
+req.user=decoded;
+
+next();
+
+
+}catch(err){
+
+return res.status(401).json({
+message:"Invalid token"
 });
 
-// DELETE ORDER
-app.delete("/api/orders/:id", authMiddleware, async (req, res) => {
-  try {
-    await Order.findByIdAndDelete(req.params.id);
-    res.json({ message: "Order deleted" });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
+}
+
+};
+
+
+
+
+
+
+// ================= SIGNUP =================
+
+
+app.post("/api/signup",async(req,res)=>{
+
+try{
+
+const {
+name,
+email,
+password
+}=req.body;
+
+
+const exist=
+await User.findOne({email});
+
+
+if(exist)
+return res.status(400).json({
+message:"User already exists"
 });
 
-// ---------------- START SERVER ----------------
-const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+
+
+const hash=
+await bcrypt.hash(password,10);
+
+
+
+const user=
+await User.create({
+
+name,
+email,
+password:hash
+
+});
+
+
+
+res.json({
+message:"Signup successful",
+user:{
+id:user._id,
+name:user.name,
+email:user.email
+}
+});
+
+
+}catch(err){
+
+res.status(500).json({
+error:err.message
+});
+
+}
+
+
+});
+
+
+
+
+
+
+// ================= LOGIN =================
+
+
+app.post("/api/login",async(req,res)=>{
+
+
+try{
+
+
+const {
+email,
+password
+}=req.body;
+
+
+
+const user=
+await User.findOne({email});
+
+
+
+if(!user)
+return res.status(400).json({
+message:"User not found"
+});
+
+
+
+const check=
+await bcrypt.compare(
+password,
+user.password
+);
+
+
+
+if(!check)
+return res.status(400).json({
+message:"Wrong password"
+});
+
+
+
+const token=
+jwt.sign(
+{
+id:user._id
+},
+process.env.JWT_SECRET,
+{
+expiresIn:"1d"
+}
+);
+
+
+
+res.json({
+token,
+user:{
+id:user._id,
+name:user.name,
+email:user.email
+}
+});
+
+
+
+}catch(err){
+
+res.status(500).json({
+error:err.message
+});
+
+}
+
+});
+
+
+
+
+
+
+
+
+// ================= PRODUCTS =================
+
+
+// GET PRODUCTS FAST
+
+app.get("/api/products",async(req,res)=>{
+
+try{
+
+
+const products=
+await Product.find({})
+.select(
+"title description price image category"
+)
+.sort({
+createdAt:-1
+})
+.limit(100)
+.lean();
+
+
+
+res.set(
+"Cache-Control",
+"public,max-age=300"
+);
+
+
+res.json(products);
+
+
+
+}catch(err){
+
+res.status(500).json({
+error:err.message
+});
+
+}
+
+
+});
+
+
+
+
+
+
+// SINGLE PRODUCT
+
+
+app.get("/api/products/:id",async(req,res)=>{
+
+
+try{
+
+const product=
+await Product.findById(req.params.id)
+.lean();
+
+
+
+res.json(product);
+
+
+}catch(err){
+
+res.status(500).json({
+error:err.message
+});
+
+}
+
+});
+
+
+
+
+
+
+
+// CREATE PRODUCT
+
+app.post(
+"/api/products",
+authMiddleware,
+async(req,res)=>{
+
+
+try{
+
+
+const product=
+await Product.create(req.body);
+
+
+res.json(product);
+
+
+
+}catch(err){
+
+res.status(500).json({
+error:err.message
+});
+
+}
+
+});
+
+
+
+
+
+
+// ================= ORDERS =================
+
+
+app.post(
+"/api/orders",
+authMiddleware,
+async(req,res)=>{
+
+
+try{
+
+
+const orders=
+req.body.map(item=>({
+
+...item,
+userId:req.user.id
+
+}));
+
+
+
+const saved=
+await Order.insertMany(orders);
+
+
+res.json(saved);
+
+
+
+}catch(err){
+
+res.status(500).json({
+error:err.message
+});
+
+}
+
+
+});
+
+
+
+
+
+app.get(
+"/api/orders",
+authMiddleware,
+async(req,res)=>{
+
+
+const orders=
+await Order.find({
+userId:req.user.id
+})
+.lean();
+
+
+res.json(orders);
+
+
+});
+
+
+
+
+
+app.delete(
+"/api/orders/:id",
+authMiddleware,
+async(req,res)=>{
+
+
+await Order.findByIdAndDelete(
+req.params.id
+);
+
+
+res.json({
+message:"Deleted"
+});
+
+
+});
+
+
+
+
+
+
+
+// ================= START =================
+
+
+const PORT=
+process.env.PORT || 5000;
+
+
+
+app.listen(PORT,()=>{
+
+console.log(
+`Server running ${PORT}`
+);
+
+});
