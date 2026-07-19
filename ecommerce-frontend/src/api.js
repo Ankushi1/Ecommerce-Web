@@ -1,7 +1,7 @@
 import axios from "axios";
 
 // ✅ BASE URL (Render backend)
-const BASE_URL = "https://ecommerce-web-qkbn.onrender.com";
+const BASE_URL = "https://ecommerce-web-1-25wp.onrender.com";
 
 // ✅ Create axios instance
 const API = axios.create({
